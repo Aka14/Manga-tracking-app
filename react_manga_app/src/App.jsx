@@ -1,27 +1,45 @@
-import { useState, useEffect } from 'react';
-import './App.css';
-import { APP_BASE_URL } from '/config.js'; // Make sure this points to http://localhost:8000/
+  import { useState, useEffect } from 'react';
+  import './App.css';
+  import Card from './components/card.jsx';
+  import Navbar from './components/navbar.jsx';
+  import test from './test.jsx';
+  import { APP_BASE_URL } from '/config.js';
 
-function App() {
-  const [mangaData, setMangaData] = useState(null);
+  function App() {
+    const [mangaData, setMangaData] = useState(null);
 
-  useEffect(() => {
-    fetch(APP_BASE_URL)
-      .then((response) => response.json())
-      .then((data) => setMangaData(data))
-      .catch((error) => console.error("Error fetching data:", error));
-  }, []);
+    useEffect(() => {
+      fetch(APP_BASE_URL)
+        .then((response) => response.json())
+        .then((data) => setMangaData(data))
+        .catch((error) => console.error("Error fetching data:", error));
+    }, []);
 
-  return (
-    <div className="flex h-screen items-center justify-center bg-gray-900 text-white flex-col gap-4">
-      <h1 className="text-4xl font-bold text-blue-500">Tailwind Works! 🎉</h1>
-      {mangaData ? (
-        <h1 className="text-2xl text-green-400">{mangaData.Hello}</h1>
-      ) : (
-        <p>Loading...</p>
-      )}
-    </div>
-  );
-}
+    return (
+        <div className=" min-h-screen pt-15 px-10">
+          <Navbar />
+          <div className="grid grid-flow-row grid-cols-5 gap-2">
+            <Card manga_name="One Piece" manga_image="src/assets/OP_cover.jpg" current_chapter="Chapter 1000" />
+            <Card manga_name="Naruto" manga_image="src/assets/OP_cover.jpg" current_chapter="Chapter 700" />
+            <Card manga_name="My Bias gets on the last train home" manga_image="src/assets/OP_cover.jpg" current_chapter="Chapter 700" />
+            <Card manga_name="Naruto" manga_image="src/assets/OP_cover.jpg" current_chapter="Chapter 700" />
+            <Card manga_name="Naruto" manga_image="src/assets/OP_cover.jpg" current_chapter="Chapter 700" />
+            <Card manga_name="Naruto" manga_image="src/assets/OP_cover.jpg" current_chapter="Chapter 700" />
+            <Card manga_name="Naruto" manga_image="src/assets/OP_cover.jpg" current_chapter="Chapter 700" />
+            <Card manga_name="Naruto" manga_image="src/assets/OP_cover.jpg" current_chapter="Chapter 700" />
+            <Card manga_name="Naruto" manga_image="src/assets/OP_cover.jpg" current_chapter="Chapter 700" />
+            <Card manga_name="Naruto" manga_image="src/assets/OP_cover.jpg" current_chapter="Chapter 700" />
+            <Card manga_name="Naruto" manga_image="src/assets/OP_cover.jpg" current_chapter="Chapter 700" />
+            <Card manga_name="Naruto" manga_image="src/assets/OP_cover.jpg" current_chapter="Chapter 700" />
+            <Card manga_name="Naruto" manga_image="src/assets/OP_cover.jpg" current_chapter="Chapter 700" />
+            <Card manga_name="Naruto" manga_image="src/assets/OP_cover.jpg" current_chapter="Chapter 700" />
+            <Card manga_name="Naruto" manga_image="src/assets/OP_cover.jpg" current_chapter="Chapter 700" />
+            <Card manga_name="Naruto" manga_image="src/assets/OP_cover.jpg" current_chapter="Chapter 700" />
+            <Card manga_name="Naruto" manga_image="src/assets/OP_cover.jpg" current_chapter="Chapter 700" />
+            <Card manga_name="Naruto" manga_image="src/assets/OP_cover.jpg" current_chapter="Chapter 700" />
+        </div>
+      </div>
+    );
+  }
 
-export default App;
+  export default App;
