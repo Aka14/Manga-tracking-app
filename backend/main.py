@@ -1,26 +1,32 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from bs4 import BeautifulSoup
 import requests
 import webbrowser
+from dotenv import load_dotenv
+import os
 
-
+load_dotenv()
 app = FastAPI()
+mangadex_key = os.getenv("MANGADEX_API_KEY")
+
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins= [
+    "http://localhost",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://www.mangapill.com",
+    "http://www.mangapill.com"
+
+],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-orgins = [
-    "http://localhost",
-    "http://localhost:5173",
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-]
+
 
 base_url = "https://www.mangapill.com"
 #manga that user is tracking & not reading currently
@@ -46,11 +52,23 @@ def get_manga_url(manga_name):
             results.append(manga['href'])
     return results[0] if results else None
 
-
-
-for manga in saved_manga:
-    if manga.current_chapter <= manga.latest_chapter:
-        print(f"New chapter available for {manga.title}: Chapter {manga.latest_chapter}")
+def get_manga_cover(manga_name):
+    base_mangadex_url = 'https://api.mangadex.org'
+    id_params = {'title': manga_name, 'limit': 1}
+    id_response = requests.get(base_mangadex_url + '/manga', params=id_params)
+    id_data = id_response.json()
+    if not id_data["data"]:
+        return None
+    else:
+        id = id_data["data"][0]["id"]
+        cover_params = {'manga[]': id, 'limit': 1}
+        cover_response = requests.get(base_mangadex_url + '/cover', params=cover_params)
+        cover_data = cover_response.json()
+    if cover_data["data"]:
+        file_name = cover_data["data"][0]["attributes"]["fileName"]
+        cover_url ='https://uploads.mangadex.org/covers/' + id + '/' + file_name + '.256.jpg'
+        return cover_url
+    return None
 
 #Finds chapters of a manga
 def find_chapters(manga_url):
@@ -63,7 +81,7 @@ def find_chapters(manga_url):
     chapter_list.reverse()
     return chapter_list
 
-# Finds the latest chapter of a manga
+# Returns chapter of a manga
 def find_chapter(manga_url, chapter_number=None):
     chapters = find_chapters(manga_url)
     if chapter_number != None:
@@ -76,55 +94,101 @@ def find_chapter(manga_url, chapter_number=None):
     else:
         return chapters[-1]
 
-def save_manga(manga_name, current_chapter=1):
+#Returns a better search of the latest chapter in a manga
+def find_better_chapter(manga_url, chapter_number=None):
+    chapters = find_chapters(manga_url)
+    if chapter_number != None:
+        i = 0
+        for chapter in chapters:
+            i = i+1
+            number = chapter.split("/")[-1].split("-")[-1]
+            # print(number)
+            if float(number) == float(chapter_number):
+                return chapters[i-1]
+    else:
+        return chapters[-1]
+
+# print("better chapter", find_better_chapter(get_manga_url("Record of Ragnarok"), 3))
+
+def save_manga(manga_list, manga_name, current_chapter=1):
     manga_url = get_manga_url(manga_name)
+    manga_cover = get_manga_cover(manga_name)
     manga = {
         "title": manga_name,
         "url": manga_url,
         "current_chapter": current_chapter,
+        "latest_chapter": None,
+        "chapter_url": None,
+        "cover_link": manga_cover
     }
-    saved_manga.append(manga)
+    manga_list.append(manga)
     return manga
-
 
 def open_manga(manga):
     webbrowser.open(base_url + find_chapter(manga['url'], manga['current_chapter']))
+save_manga(saved_manga, 'One piece', 1100)
+save_manga(saved_manga, 'Record of Ragnarok', 110)
+save_manga(re_reads, 'Greatest Estate Developer')
+#print(find_chapter(get_manga_url('One Piece')))
 
-save_manga("one piece", 1150)
-save_manga('my bias gets on the last train', 10)
-save_manga('SSS class suicide hunter', 101)
-save_manga("Greatest estate developer")
-
-#webbrowser.open(base_url + find_latest_chapter("/manga/4035/shuumatsu-no-walk-re"))
-#print(get_manga_url("Record of Ragnarok"))
-#open_manga(saved_manga[3])
-
-# @app.post("/recieve-data")
 def get_manga_from_js(chapter_link):
     page = requests.get(chapter_link)
     soup = BeautifulSoup(page.text, features="html.parser")
     result = soup.find(id="top").get_text()
     # text = result.get_text()
     name = result.split("Chapter")
-    return save_manga(name[0], float(name[1]))
+    return {name[0], float(name[1])}
 
-print(get_manga_from_js("https://www.mangapill.com/chapters/8-10855000/kingdom-chapter-855"))
+
+
 print(saved_manga)
-#open_manga(saved_manga[2])
-#open_manga(saved_manga[-1])
-#print(find_chapter(get_manga_url("SSS class suicide hunter"), 100))
+print(re_reads)
 
-@app.get("/saved-manga")
+@app.post('/api/get-current-link')
+async def get_link(chapter_link: Request):
+    data = await chapter_link.json()
+    link = data.get("chapter_link")
+    manga_data = list(get_manga_from_js(link))
+    print(manga_data)
+    save_manga(saved_manga, manga_data[1], manga_data[0])
+    # print(saved_manga)
+    return {"recieved": link}
+
+@app.post('/api/get-re-read-link')
+async def get_link(chapter_link: Request):
+    data = await chapter_link.json()
+    link = data.get("chapter_link")
+    manga_data = list(get_manga_from_js(link))
+    save_manga(re_reads, manga_data[1], manga_data[0])
+    print(re_reads)
+    return {"recieved": link}
+
+@app.get("/api/get-saved-manga")
 def get_saved_manga():
     return {"saved_manga": saved_manga}
+
+@app.get("/api/get-re-reads")
+def get_re_reads():
+    print(re_reads)
+    return {"re_reads": re_reads}
+
+@app.get("/api/get-new-chapters")
+def get_new_chapters():
+    new_chapters = []
+    for manga in saved_manga:
+        latest_chapter = find_chapter(manga['url']).split("/")[-1].split("-")[-1]
+        # print(float(latest_chapter))
+        # print(float(manga['current_chapter']));
+        if float(latest_chapter) > float(manga['current_chapter']):
+            manga['latest_chapter'] = latest_chapter
+            manga['chapter_url'] = find_chapter(manga['url'])
+            new_chapters.append(manga)
+            print('new', new_chapters)
+    return {"new_chapters": new_chapters}
 
 @app.get("/")
 def read_root():
     return {"Hello": "Manga App!"}
-
-@app.get("/data")
-def read_data():
-    return {"data": "This is some data from the server."}
 
 if __name__ == "__main__":
     import uvicorn
