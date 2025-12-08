@@ -44,6 +44,7 @@ re_reads = []
 #gets a manga url from the name
 def get_manga_url(manga_name):
     search_url = base_url + "/search?q=" + manga_name.replace(" ", "+") + "&type=&status="
+    print(search_url)
     page = requests.get(search_url)
     soup = BeautifulSoup(page.text, features="html.parser")
     results = []
@@ -69,6 +70,14 @@ def get_manga_cover(manga_name):
         cover_url ='https://uploads.mangadex.org/covers/' + id + '/' + file_name + '.256.jpg'
         return cover_url
     return None
+
+def duplicate_check(collection, manga_name):
+    print(collection)
+    print(manga_name)
+    for manga in collection:
+        if manga_name == manga['title']:
+            return True
+    return False
 
 #Finds chapters of a manga
 def find_chapters(manga_url):
@@ -121,12 +130,13 @@ def save_manga(manga_list, manga_name, current_chapter=1):
         "chapter_url": None,
         "cover_link": manga_cover
     }
-    manga_list.append(manga)
+    if duplicate_check(manga_list, manga_name) == False:
+        manga_list.append(manga)
     return manga
 
 def open_manga(manga):
     webbrowser.open(base_url + find_chapter(manga['url'], manga['current_chapter']))
-save_manga(saved_manga, 'One piece', 1100)
+save_manga(saved_manga, 'One Piece', 1100)
 save_manga(saved_manga, 'Record of Ragnarok', 110)
 save_manga(re_reads, 'Greatest Estate Developer')
 #print(find_chapter(get_manga_url('One Piece')))
@@ -139,7 +149,7 @@ def get_manga_from_js(chapter_link):
     name = result.split("Chapter")
     return {name[0], float(name[1])}
 
-
+print(duplicate_check(saved_manga, "One piece"))
 
 print(saved_manga)
 print(re_reads)
@@ -149,8 +159,9 @@ async def get_link(chapter_link: Request):
     data = await chapter_link.json()
     link = data.get("chapter_link")
     manga_data = list(get_manga_from_js(link))
+    print("hit here")
     print(manga_data)
-    save_manga(saved_manga, manga_data[1], manga_data[0])
+    save_manga(saved_manga, manga_data[0], manga_data[1])
     # print(saved_manga)
     return {"recieved": link}
 
@@ -159,7 +170,7 @@ async def get_link(chapter_link: Request):
     data = await chapter_link.json()
     link = data.get("chapter_link")
     manga_data = list(get_manga_from_js(link))
-    save_manga(re_reads, manga_data[1], manga_data[0])
+    save_manga(re_reads, manga_data[0], manga_data[1])
     print(re_reads)
     return {"recieved": link}
 

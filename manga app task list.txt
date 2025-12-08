@@ -1,0 +1,11 @@
+login + auth + data recollection
+Search on navbar
+light mode
+UI overhaul
+deployment
+
+
+New chapters search -done 
+Click functionality - done
+Image search - done
+browser html better - done

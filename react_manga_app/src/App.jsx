@@ -21,7 +21,6 @@ function App() {
         console.error("Failed to fetch new chapters:", err);
       }
     }
-
     fetchNewChapters();
   }, []);
 
