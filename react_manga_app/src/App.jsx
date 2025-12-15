@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import "./App.css";
-import Card from "./components/card.jsx";
 import Navbar from "./components/navbar.jsx";
 import { Route, Routes } from "react-router-dom";
 import NewChapters from "./pages/NewChapters.jsx";
 import SavedManga from "./pages/savedManga.jsx";
 import ReReads from "./pages/reReads.jsx";
+import Login from "./pages/Login.jsx";
+import SignUp from "./pages/SignUp.jsx";
 import { API_URL } from "./config/index.js";
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
         const response = await fetch(`${API_URL}get-new-chapters`);
         const data = await response.json();
         setNewChapters(data.new_chapters || []);
+        console.log("Fetched new chapters:", data);
       } catch (err) {
         console.error("Failed to fetch new chapters:", err);
       }
@@ -29,6 +31,8 @@ function App() {
       <Navbar />
       <div className="container">
         <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/sign-up" element={<SignUp />} />
           <Route
             path="/new-chapters"
             element={<NewChapters data={newChapters} />}

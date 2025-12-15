@@ -21,7 +21,6 @@ const Navbar = () => {
       });
       const data = await response.json();
       navigate(`/${mode}`, { state: { data } });
-      console.log("merked:", data);
       return data;
     } catch (err) {
       console.log("Fetch error", err);
@@ -65,7 +64,6 @@ const Navbar = () => {
             <button
               onClick={() => {
                 getData("re-reads", "get-re-reads");
-                console.log("got here")
               }}
               className={`block py-2 px-2 text-black p-2 w-[130px] md:p-0 rounded-full ${
                 location.pathname === "/re-reads"

@@ -1,7 +1,4 @@
-import { use } from "react";
 import Card from "../components/card.jsx";
-import { useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
 
 export default function NewChapters({ data }) {
   const mangaList = data || [];

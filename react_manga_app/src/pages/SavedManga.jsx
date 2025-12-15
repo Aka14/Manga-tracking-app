@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
-// import "./App.css";
 import Card from "../components/card.jsx";
-import Navbar from "../components/navbar.jsx";
 import { useLocation } from "react-router-dom";
 
 export default function SavedManga() {
