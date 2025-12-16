@@ -126,8 +126,9 @@ def save_manga(manga_list, manga_name, current_chapter=1):
         "title": manga_name,
         "url": manga_url,
         "current_chapter": current_chapter,
+        "chapter_url": find_chapter(manga_url, current_chapter),
         "latest_chapter": None,
-        "chapter_url": None,
+        "latest_chapter_url":None,
         "cover_link": manga_cover
     }
     if duplicate_check(manga_list, manga_name) == False:
@@ -136,9 +137,11 @@ def save_manga(manga_list, manga_name, current_chapter=1):
 
 def open_manga(manga):
     webbrowser.open(base_url + find_chapter(manga['url'], manga['current_chapter']))
+
 save_manga(saved_manga, 'One Piece', 1100)
 save_manga(saved_manga, 'Record of Ragnarok', 110)
 save_manga(re_reads, 'Greatest Estate Developer')
+print(saved_manga)
 #print(find_chapter(get_manga_url('One Piece')))
 
 def get_manga_from_js(chapter_link):
@@ -176,6 +179,8 @@ async def get_link(chapter_link: Request):
 
 @app.get("/api/get-saved-manga")
 def get_saved_manga():
+    # for manga in saved_manga:
+    #     manga['chapter_url'] = find_chapter(manga['url'], manga['current_chapter'])
     return {"saved_manga": saved_manga}
 
 @app.get("/api/get-re-reads")
@@ -188,13 +193,12 @@ def get_new_chapters():
     new_chapters = []
     for manga in saved_manga:
         latest_chapter = find_chapter(manga['url']).split("/")[-1].split("-")[-1]
-        # print(float(latest_chapter))
-        # print(float(manga['current_chapter']));
         if float(latest_chapter) > float(manga['current_chapter']):
             manga['latest_chapter'] = latest_chapter
-            manga['chapter_url'] = find_chapter(manga['url'])
+            manga['latest_chapter_url'] = find_chapter(manga['url'])
             new_chapters.append(manga)
             print('new', new_chapters)
+            
     return {"new_chapters": new_chapters}
 
 @app.get("/")
