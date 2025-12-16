@@ -1,7 +1,8 @@
 import React from "react";
 import { BASE_URL } from "../config";
 
-const Card = ({ manga_name, cover, current_chapter, chapter_url }) => {
+const Card = ({ manga_name, cover, current_chapter, chapter_url, latest_url }) => {
+  console.log(manga_name, cover, current_chapter, chapter_url, latest_url);
   return (
     <div className="w-[200px] flex flex-col gap-4 max-w-sm overflow-hidden mt-auto">
       <div>
