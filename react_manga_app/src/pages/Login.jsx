@@ -38,7 +38,7 @@ export default function Login() {
     }
     else{
         setUserData(data);
-        console.log("success!")
+        console.log(supabase.auth.getToken())
         navigate("/saved-manga");
     }
   }

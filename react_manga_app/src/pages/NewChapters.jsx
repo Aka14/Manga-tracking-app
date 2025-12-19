@@ -2,10 +2,6 @@ import Card from "../components/card.jsx";
 
 export default function NewChapters({ data }) {
   const mangaList = data || [];
-  const datanew = location.state?.data || [];
-
-  console.log(data);
-
   return (
     <div className="grid grid-flow-row grid-cols-5 gap-2">
       {mangaList.map((manga, index) => (
