@@ -5,11 +5,47 @@ import requests
 import webbrowser
 from dotenv import load_dotenv
 import os
+from jose import jwt
+import supabase
+from supabase import create_client, Client
 
 load_dotenv()
 app = FastAPI()
 mangadex_key = os.getenv("MANGADEX_API_KEY")
+supabase_url = os.getenv("SUPABASE_URL")
+supabase_key = os.getenv("SUPABASE_KEY")
 
+supabase = create_client(supabase_url, supabase_key)
+
+JWKS_URL = f"{supabase_url}/auth/v1/.well-known/jwks.json"
+jwks = requests.get(JWKS_URL).json()
+
+def get_user_id_from_token(token: str) -> str:
+    header = jwt.get_unverified_header(token)
+    key = next(k for k in jwks["keys"] if k["kid"] == header["kid"])
+
+    payload = jwt.decode(
+        token,
+        key,
+        audience="authenticated",
+        algorithms=["RS256"]
+    )
+
+    return payload["sub"]
+
+def save_manga_to_db(token, manga):
+    user_id = get_user_id_from_token(token)
+    print(user_id)
+    supabase.table("saved_manga").insert({
+        "user_id": user_id,
+        "name": manga['title'],
+        "chapter_link": manga['chapter_url'],
+        "current_chapter": manga['current_chapter'],
+        "cover_link": manga['cover_link']
+    }).execute()
+
+response = supabase.table("saved_manga").select("*").execute()
+print("response ", response.data)
 
 app.add_middleware(
     CORSMiddleware,
@@ -44,7 +80,6 @@ re_reads = []
 #gets a manga url from the name
 def get_manga_url(manga_name):
     search_url = base_url + "/search?q=" + manga_name.replace(" ", "+") + "&type=&status="
-    print(search_url)
     page = requests.get(search_url)
     soup = BeautifulSoup(page.text, features="html.parser")
     results = []
@@ -72,8 +107,6 @@ def get_manga_cover(manga_name):
     return None
 
 def duplicate_check(collection, manga_name):
-    print(collection)
-    print(manga_name)
     for manga in collection:
         if manga_name == manga['title']:
             return True
@@ -141,7 +174,6 @@ def open_manga(manga):
 save_manga(saved_manga, 'One Piece', 1100)
 save_manga(saved_manga, 'Record of Ragnarok', 110)
 save_manga(re_reads, 'Greatest Estate Developer')
-print(saved_manga)
 #print(find_chapter(get_manga_url('One Piece')))
 
 def get_manga_from_js(chapter_link):
@@ -152,18 +184,13 @@ def get_manga_from_js(chapter_link):
     name = result.split("Chapter")
     return {name[0], float(name[1])}
 
-print(duplicate_check(saved_manga, "One piece"))
 
-print(saved_manga)
-print(re_reads)
 
 @app.post('/api/get-current-link')
 async def get_link(chapter_link: Request):
     data = await chapter_link.json()
     link = data.get("chapter_link")
     manga_data = list(get_manga_from_js(link))
-    print("hit here")
-    print(manga_data)
     save_manga(saved_manga, manga_data[0], manga_data[1])
     # print(saved_manga)
     return {"recieved": link}
@@ -174,7 +201,6 @@ async def get_link(chapter_link: Request):
     link = data.get("chapter_link")
     manga_data = list(get_manga_from_js(link))
     save_manga(re_reads, manga_data[0], manga_data[1])
-    print(re_reads)
     return {"recieved": link}
 
 @app.get("/api/get-saved-manga")
@@ -185,7 +211,6 @@ def get_saved_manga():
 
 @app.get("/api/get-re-reads")
 def get_re_reads():
-    print(re_reads)
     return {"re_reads": re_reads}
 
 @app.get("/api/get-new-chapters")
@@ -197,8 +222,6 @@ def get_new_chapters():
             manga['latest_chapter'] = latest_chapter
             manga['latest_chapter_url'] = find_chapter(manga['url'])
             new_chapters.append(manga)
-            print('new', new_chapters)
-            
     return {"new_chapters": new_chapters}
 
 @app.get("/")
