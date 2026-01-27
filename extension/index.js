@@ -8,6 +8,7 @@ async function addCurrent() {
   chrome.scripting.executeScript({
     target: { tabId: tab.id },
     func: async () => {
+      console.log(self.location.origin);
       const url = window.location.href;
       try {
         const response = await fetch(

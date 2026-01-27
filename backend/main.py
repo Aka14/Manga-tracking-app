@@ -8,6 +8,9 @@ import os
 from jose import jwt
 import supabase
 from supabase import create_client, Client
+from supabase.lib.client_options import ClientOptions
+from pydantic import BaseModel
+
 
 load_dotenv()
 app = FastAPI()
@@ -17,49 +20,50 @@ supabase_key = os.getenv("SUPABASE_KEY")
 
 supabase = create_client(supabase_url, supabase_key)
 
-JWKS_URL = f"{supabase_url}/auth/v1/.well-known/jwks.json"
-jwks = requests.get(JWKS_URL).json()
 
-def get_user_id_from_token(token: str) -> str:
-    header = jwt.get_unverified_header(token)
-    key = next(k for k in jwks["keys"] if k["kid"] == header["kid"])
 
-    payload = jwt.decode(
-        token,
-        key,
-        audience="authenticated",
-        algorithms=["RS256"]
-    )
+# supabase = create_client(supabase_url,supabase_key, options=ClientOptions(
+#         auto_refresh_token=False,
+#         persist_session=False,
+#     )
+# )
 
-    return payload["sub"]
+#admin_auth_client = supabase.auth.admin
 
-def save_manga_to_db(token, manga):
-    user_id = get_user_id_from_token(token)
-    print(user_id)
-    supabase.table("saved_manga").insert({
-        "user_id": user_id,
-        "name": manga['title'],
-        "chapter_link": manga['chapter_url'],
-        "current_chapter": manga['current_chapter'],
-        "cover_link": manga['cover_link']
-    }).execute()
+#print(supabase.auth.admin.list_users())
 
-response = supabase.table("saved_manga").select("*").execute()
-print("response ", response.data)
+# JWKS_URL = f"{supabase_url}/auth/v1/.well-known/jwks.json"
+# jwks = requests.get(JWKS_URL).json()
+
+# def get_user_id_from_token(token: str) -> str:
+#     header = jwt.get_unverified_header(token)
+#     key = next(k for k in jwks["keys"] if k["kid"] == header["kid"])
+
+#     payload = jwt.decode(
+#         token,
+#         key,
+#         audience="authenticated",
+#         algorithms=["RS256"]
+#     )
+#     print(payload["sub"])
+#     return payload["sub"]
+
+
+
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins= [
-    "http://localhost",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://www.mangapill.com",
-    "http://www.mangapill.com"
-
-],
-    allow_credentials=True,
+#     allow_origins= [
+#     "http://localhost",
+#     "http://localhost:5173",
+#     "http://127.0.0.1:5173",
+#     "https://www.mangapill.com",
+#     "http://www.mangapill.com"
+# ],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_origins=["*"],
 )
 
 
@@ -71,6 +75,35 @@ saved_manga = []
 current_manga = []
 #manga that user has read & wants to keep their place while they wait for chapters
 re_reads = []
+
+
+@app.post('/api/get-token')
+async def get_token(token: Request):
+    data = await token.json()
+    token = data.get("token")
+    # print(get_user_id_from_token(token))
+    try: 
+        response = supabase.auth.get_user(token)
+        user = response.user
+        print(user.id)
+        table = supabase.table("saved_manga").select("*").eq("user_id", user.id).execute()
+        print(supabase.table("saved_manga").select("*"))
+        # print(user.email)
+    except Exception as e:
+        print(f"Error: {e}")
+        print("Invalid or expired token")
+    return {"recieved": token}
+
+def save_manga_to_db(token, manga):
+    user_id = get_user_id_from_token(token)
+    print(user_id)
+    supabase.table("saved_manga").insert({
+        "user_id": user_id,
+        "name": manga['title'],
+        "chapter_link": manga['chapter_url'],
+        "current_chapter": manga['current_chapter'],
+        "cover_link": manga['cover_link']
+    }).execute()
 
 
 #url = "https://www.mangapill.com/manga/4035/shuumatsu-no-walk-re"   
@@ -86,7 +119,7 @@ def get_manga_url(manga_name):
     for manga in soup.find_all("a", href=True):
         if "/manga/" in manga['href']:
             results.append(manga['href'])
-    return results[0] if results else None
+    return results[0] if results else None 
 
 def get_manga_cover(manga_name):
     base_mangadex_url = 'https://api.mangadex.org'
@@ -184,15 +217,16 @@ def get_manga_from_js(chapter_link):
     name = result.split("Chapter")
     return {name[0], float(name[1])}
 
+class ChapterLink(BaseModel):
+    chapter_link: str
 
 
 @app.post('/api/get-current-link')
-async def get_link(chapter_link: Request):
-    data = await chapter_link.json()
-    link = data.get("chapter_link")
+async def get_link(data: ChapterLink):
+    link = data.chapter_link
     manga_data = list(get_manga_from_js(link))
     save_manga(saved_manga, manga_data[0], manga_data[1])
-    # print(saved_manga)
+    print(saved_manga)
     return {"recieved": link}
 
 @app.post('/api/get-re-read-link')
@@ -202,6 +236,8 @@ async def get_link(chapter_link: Request):
     manga_data = list(get_manga_from_js(link))
     save_manga(re_reads, manga_data[0], manga_data[1])
     return {"recieved": link}
+
+
 
 @app.get("/api/get-saved-manga")
 def get_saved_manga():

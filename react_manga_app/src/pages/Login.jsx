@@ -4,6 +4,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 import { useEffect } from "react";
+import { API_URL } from "../config/index.js";
 
 
 const supabase = createClient(
@@ -38,7 +39,25 @@ export default function Login() {
     }
     else{
         setUserData(data);
-        console.log(supabase.auth.getToken())
+        const {data: {session}, error} = await supabase.auth.getSession();
+        try {
+          const response = await fetch(`${API_URL}get-token`, {
+            method: 'POST', 
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({token: session.access_token}),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const responseData = await response.json();
+          console.log('token sent:', responseData);
+          console.log(session.access_token);
+        } catch (error) {
+          console.error('Error:', error);
+  }
         navigate("/saved-manga");
     }
   }

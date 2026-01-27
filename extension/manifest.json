@@ -2,10 +2,10 @@
   "manifest_version": 3,
   "name": "Mangapill bookmark extension",
   "icons": {
-    "16": "squirtle1.png",
-    "32": "squirtle1.png",
-    "48": "squirtle1.png",
-    "128": "squirtle1.png"
+    "16": "/assets/squirtle1.png",
+    "32": "/assets/squirtle1.png",
+    "48": "/assets/squirtle1.png",
+    "128": "/assets/squirtle1.png"
   },
   "version": "1.0.0",
   "background": {
@@ -13,5 +13,5 @@
   },
   "action": { },
   "permissions": ["scripting", "tabs"],
-  "host_permissions": ["*://www.mangapill.com/chapters/*"]
+  "host_permissions": ["http://127.0.0.1:8000/*","*://*.mangapill.com/chapters/*"]
 }
