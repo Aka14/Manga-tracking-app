@@ -1,0 +1,1 @@
+1/27: Saved_manga and reReads pull from db, new chapters is not loading, still very slow, RLS not implemented yet

@@ -41,7 +41,7 @@ export default function Login() {
         setUserData(data);
         const {data: {session}, error} = await supabase.auth.getSession();
         try {
-          const response = await fetch(`${API_URL}get-token`, {
+          const response = await fetch(`${API_URL}get-data`, {
             method: 'POST', 
             headers: {
               'Content-Type': 'application/json',

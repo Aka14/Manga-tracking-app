@@ -3,7 +3,7 @@ import "./App.css";
 import Navbar from "./components/navbar.jsx";
 import { Route, Routes } from "react-router-dom";
 import NewChapters from "./pages/NewChapters.jsx";
-import SavedManga from "./pages/savedManga.jsx";
+import SavedManga from "./pages/SavedManga.jsx";
 import ReReads from "./pages/reReads.jsx";
 import Login from "./pages/Login.jsx";
 import SignUp from "./pages/SignUp.jsx";

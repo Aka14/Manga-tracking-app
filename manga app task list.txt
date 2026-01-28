@@ -1,5 +1,9 @@
-login + auth + data recollection
+New chapters from db data
+implement RLS
+Optimize to reduce load times
+Add delete function
 Search on navbar
+Add support for manhwa website
 light mode
 UI overhaul
 deployment
@@ -9,3 +13,4 @@ New chapters search -done
 Click functionality - done
 Image search - done
 browser html better - done
+login + auth + data recollection - done

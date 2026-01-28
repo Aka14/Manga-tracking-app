@@ -12,6 +12,6 @@
     "service_worker": "service_worker.js"
   },
   "action": { },
-  "permissions": ["scripting", "tabs"],
+  "permissions": ["storage", "scripting", "tabs"],
   "host_permissions": ["http://127.0.0.1:8000/*","*://*.mangapill.com/chapters/*"]
 }
