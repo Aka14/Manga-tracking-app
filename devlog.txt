@@ -1,1 +1,2 @@
 1/27: Saved_manga and reReads pull from db, new chapters is not loading, still very slow, RLS not implemented yet
+1/28: New chapters now loading, everything loads once user is logged in successfully and displays statically. Need to implement delete function and RLS

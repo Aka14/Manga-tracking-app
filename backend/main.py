@@ -1,4 +1,5 @@
 import re
+from urllib import request
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from bs4 import BeautifulSoup
@@ -78,9 +79,11 @@ base_url = "https://www.mangapill.com"
 #manga that user is tracking & not reading currently
 saved_manga = []
 #manga that user is reading currently & dosen't want to keep track of new chapters
-current_manga = []
+new_chapters = []
 #manga that user has read & wants to keep their place while they wait for chapters
 re_reads = []
+
+userId = ""
 
 
 @app.post('/api/get-data')
@@ -90,14 +93,16 @@ async def get_token(token: Request):
     try: 
         response = supabase.auth.get_user(token)
         user = response.user
-        print(user.id)
-        table = supabase.table("savedManga").select("*").eq("user_id", user.id).execute()
-        print(table)
-        for manga in table.data:
-            save_manga(saved_manga, manga['name'], manga['current_chapter'])
-        table = supabase.table("reReads").select("*").eq("user_id", user.id).execute()
-        for manga in table.data:
-            save_manga(re_reads, manga['name'], manga['current_chapter'])
+        # table = supabase.table("savedManga").select("*").eq("user_id", user.id).execute()
+        # print(table)
+        # for manga in table.data:
+        #     save_manga(saved_manga, manga['name'], manga['current_chapter'])
+        #     latest_chapter = find_chapter(manga['url']).split("/")[-1].split("-")[-1]
+        #     new_chapters = get_new_chapters()
+        #     save_manga(new_chapters, )
+        # table = supabase.table("reReads").select("*").eq("user_id", user.id).execute()
+        # for manga in table.data:
+        #     save_manga(re_reads, manga['name'], manga['current_chapter'])
     except Exception as e:
         print(f"Error: {e}")
         print("Invalid or expired token")
@@ -108,11 +113,11 @@ def save_manga_to_db(userId, manga_data, db_name="savedManga"):
     current_chapter = manga_data[1]
     manga_url = get_manga_url(manga_name)
     manga_cover = get_manga_cover(manga_name)
-    print("in save to db", userId, manga_name, current_chapter, base_url + find_chapter(manga_url, current_chapter), manga_cover)
+    print("in save to db", userId, manga_name, current_chapter, base_url + find_chapter(base_url + manga_url, current_chapter), manga_cover)
     supabase.table(db_name).insert({
         "user_id": userId,
         "name": manga_name,
-        "chapter_link": base_url + find_chapter(manga_url, current_chapter),
+        "chapter_link": base_url + find_chapter(base_url + manga_url, current_chapter),
         "current_chapter": current_chapter,
         "cover_link": manga_cover
     }).execute()
@@ -160,24 +165,31 @@ def get_manga_cover(manga_name):
 
 def duplicate_check(collection, manga_name):
     for manga in collection:
-        if manga_name == manga['title']:
+        if manga_name == manga['name']:
             return True
     return False
 
 #Finds chapters of a manga
 def find_chapters(manga_url):
-    page = requests.get(base_url + manga_url)
+    page = requests.get(manga_url)
+    print("manga_url", manga_url)
     soup = BeautifulSoup(page.text, features="html.parser")
     chapters = soup.find(id="chapters")
+    # print("chapters", chapters)
+    if chapters is None:
+        print(f"Warning: Could not find chapters div for {manga_url}")
+        return []
     chapter_list = []
     for chapter in chapters.find_all("a", href=True):
         chapter_list.append(chapter['href'])
     chapter_list.reverse()
     return chapter_list
 
-# Returns chapter of a manga
+# Returns chapter of a manga, if not specified returns latest chapter
 def find_chapter(manga_url, chapter_number=None):
     chapters = find_chapters(manga_url)
+    if not chapters:
+        print(f"Warning: No chapters found for {manga_url}")
     if chapter_number != None:
         i = 0
         for chapter in chapters:
@@ -203,15 +215,18 @@ def find_better_chapter(manga_url, chapter_number=None):
         return chapters[-1]
 
 # print("better chapter", find_better_chapter(get_manga_url("Record of Ragnarok"), 3))
-
+print(find_chapter(base_url + "/manga/5460/dandadan"))
+print(get_manga_url("Dandadan"))
+print(get_manga_url("One Punch Man"))
+print(find_chapter(base_url + get_manga_url("One Punch Man")).split("/")[-1].split("-")[-1])
 def save_manga(manga_list, manga_name, current_chapter=1):
     manga_url = get_manga_url(manga_name)
     manga_cover = get_manga_cover(manga_name)
     manga = {
-        "title": manga_name,
+        "name": manga_name,
         "url": manga_url,
         "current_chapter": current_chapter,
-        "chapter_url": find_chapter(manga_url, current_chapter),
+        "chapter_url": find_chapter(base_url + manga_url, current_chapter),
         "latest_chapter": None,
         "latest_chapter_url":None,
         "cover_link": manga_cover
@@ -251,7 +266,7 @@ async def get_link(data: ChapterData):
     print(userId)
     manga_data = get_manga_from_js(link)
     print(manga_data)
-    save_manga(saved_manga, manga_data[0], manga_data[1])
+    # save_manga(saved_manga, manga_data[0], manga_data[1])
     save_manga_to_db(userId, manga_data)
     print(saved_manga)
     return {"recieved": link}
@@ -266,26 +281,51 @@ async def get_link(data: ChapterData):
     save_manga_to_db(userId, manga_data, "reReads")
     return {"recieved": link}
 
-
+def get_userId():
+    return userId
 
 @app.get("/api/get-saved-manga")
-def get_saved_manga():
-    print(saved_manga)
+def get_saved_manga(request: Request):
+    auth = request.headers.get("authorization")
+    token = auth.split(" ")[1]
+    userId = supabase.auth.get_user(token).user.id
+    saved_manga = []
+    table = supabase.table("savedManga").select("*").eq("user_id", userId).execute()
+    for manga in table.data:
+        save_manga(saved_manga, manga['name'], manga['current_chapter'])   
+    # print(saved_manga
     return {"saved_manga": saved_manga}
 
 @app.get("/api/get-re-reads")
-def get_re_reads():
+def get_re_reads(request: Request):
+    auth = request.headers.get("authorization")
+    token = auth.split(" ")[1]
+    userId = supabase.auth.get_user(token).user.id
+    re_reads = []
+    table = supabase.table("reReads").select("*").eq("user_id", userId).execute()
+    for manga in table.data:
+        save_manga(re_reads, manga['name'], manga['current_chapter'])
+    # print("rereads")   
+    # print(re_reads)
     return {"re_reads": re_reads}
 
 @app.get("/api/get-new-chapters")
-def get_new_chapters():
+def get_new_chapters(request: Request):
+    print("newchaps")
     new_chapters = []
-    for manga in saved_manga:
-        latest_chapter = find_chapter(manga['url']).split("/")[-1].split("-")[-1]
+    auth = request.headers.get("authorization")
+    token = auth.split(" ")[1]
+    userId = supabase.auth.get_user(token).user.id
+    saved_manga = supabase.table("savedManga").select("*").eq("user_id", userId).execute()
+    # print(saved_manga.data)
+    for manga in saved_manga.data:
+        # print(manga['name'])
+        latest_chapter = find_chapter(base_url + get_manga_url(manga['name'])).split("/")[-1].split("-")[-1]
         if float(latest_chapter) > float(manga['current_chapter']):
             manga['latest_chapter'] = latest_chapter
-            manga['latest_chapter_url'] = find_chapter(manga['url'])
+            manga['latest_chapter_url'] = find_chapter(base_url + get_manga_url(manga['name']))
             new_chapters.append(manga)
+    print(new_chapters)
     return {"new_chapters": new_chapters}
 
 @app.get("/")

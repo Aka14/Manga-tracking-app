@@ -1,22 +1,20 @@
 import { useState, useEffect } from "react";
-// import "./App.css";
 import Card from "../components/card.jsx";
-import Navbar from "../components/navbar.jsx";
-import { useLocation } from "react-router-dom";
 
-export default function ReReads() {
-  const location = useLocation();
-  const data = location.state?.data || [];
-  console.log("data", data)
-  const mangaList = data?.["re_reads"] || [];
-  console.log(mangaList)
-
+export default function ReReads({ data}) {
+  console.log('ReReads component rendered');
+  console.log('data prop:', data);
+  console.log('data type:', typeof data);
+  console.log('data is array?', Array.isArray(data));
+  console.log('data', data)
+  const mangaList = data || [];
+  console.log('mangaList', mangaList)
   return (
     <div className="grid grid-flow-row grid-cols-5 gap-2">
       {mangaList.map((manga, index) => (
         <Card
           key={index}
-          manga_name={manga.title}
+          manga_name={manga.name}
           cover={manga.cover_link}
           current_chapter={"Chapter " + manga.current_chapter}
           chapter_url={manga.chapter_url}

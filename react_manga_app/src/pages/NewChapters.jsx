@@ -1,6 +1,7 @@
 import Card from "../components/card.jsx";
 
 export default function NewChapters({ data }) {
+  console.log("hi")
   const mangaList = data || [];
   return (
     <div className="grid grid-flow-row grid-cols-5 gap-2">

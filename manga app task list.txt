@@ -1,7 +1,6 @@
-New chapters from db data
 implement RLS
-Optimize to reduce load times
 Add delete function
+Optimize to reduce load times
 Search on navbar
 Add support for manhwa website
 light mode
@@ -14,3 +13,4 @@ Click functionality - done
 Image search - done
 browser html better - done
 login + auth + data recollection - done
+New chapters from db data - done
