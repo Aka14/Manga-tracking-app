@@ -8,7 +8,7 @@ export default function NewChapters({ data }) {
       {mangaList.map((manga, index) => (
         <Card
           key={index}
-          manga_name={manga.title}
+          manga_name={manga.name}
           cover={manga.cover_link}
           current_chapter={"Chapter " + manga.latest_chapter}
           chapter_url={manga.latest_chapter_url}

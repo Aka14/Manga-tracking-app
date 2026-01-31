@@ -58,7 +58,7 @@ export default function Login() {
         } catch (error) {
           console.error('Error:', error);
   }
-        navigate("/re-reads", {state: {justLoggedIn: true}});
+        navigate("/saved-manga", {state: {justLoggedIn: true}});
     }
   }
   async function handleLogout() {

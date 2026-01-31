@@ -12,6 +12,7 @@ import supabase
 from supabase import create_client, Client
 from supabase.lib.client_options import ClientOptions
 from pydantic import BaseModel
+from uuid import UUID
 
 
 load_dotenv()
@@ -19,42 +20,7 @@ app = FastAPI()
 mangadex_key = os.getenv("MANGADEX_API_KEY")
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
-
-supabase = create_client(supabase_url, supabase_key)
-# profiles = supabase.table("profiles").select("*").execute()
-# response = (
-#     supabase.table("savedManga")
-#     .select("*")
-#     .execute()
-# )
-# print(response)
-
-# supabase = create_client(supabase_url,supabase_key, options=ClientOptions(
-#         auto_refresh_token=False,
-#         persist_session=False,
-#     )
-# )
-
-#admin_auth_client = supabase.auth.admin
-
-#print(supabase.auth.admin.list_users())
-
-# JWKS_URL = f"{supabase_url}/auth/v1/.well-known/jwks.json"
-# jwks = requests.get(JWKS_URL).json()
-
-# def get_user_id_from_token(token: str) -> str:
-#     header = jwt.get_unverified_header(token)
-#     key = next(k for k in jwks["keys"] if k["kid"] == header["kid"])
-
-#     payload = jwt.decode(
-#         token,
-#         key,
-#         audience="authenticated",
-#         algorithms=["RS256"]
-#     )
-#     print(payload["sub"])
-#     return payload["sub"]
-
+service_role_key = os.getenv("SUPABASE_ROLE_KEY")
 
 
 
@@ -92,44 +58,36 @@ async def get_token(token: Request):
     token = data.get("token")
     try: 
         response = supabase.auth.get_user(token)
-        user = response.user
-        # table = supabase.table("savedManga").select("*").eq("user_id", user.id).execute()
-        # print(table)
-        # for manga in table.data:
-        #     save_manga(saved_manga, manga['name'], manga['current_chapter'])
-        #     latest_chapter = find_chapter(manga['url']).split("/")[-1].split("-")[-1]
-        #     new_chapters = get_new_chapters()
-        #     save_manga(new_chapters, )
-        # table = supabase.table("reReads").select("*").eq("user_id", user.id).execute()
-        # for manga in table.data:
-        #     save_manga(re_reads, manga['name'], manga['current_chapter'])
     except Exception as e:
         print(f"Error: {e}")
         print("Invalid or expired token")
     return {"recieved": token}
 
-def save_manga_to_db(userId, manga_data, db_name="savedManga"):
+supabase = create_client(supabase_url, service_role_key)
+
+def save_manga_to_db(userId, manga_data, db_name="saved_manga"):
     manga_name = manga_data[0]
     current_chapter = manga_data[1]
     manga_url = get_manga_url(manga_name)
     manga_cover = get_manga_cover(manga_name)
-    print("in save to db", userId, manga_name, current_chapter, base_url + find_chapter(base_url + manga_url, current_chapter), manga_cover)
-    supabase.table(db_name).insert({
-        "user_id": userId,
+    print("DEBUG userId:", userId, type(userId))
+    print(db_name)
+    print(find_chapter(base_url + manga_url, current_chapter))
+    supabase.table(db_name).insert(
+        {
+        "user_id": str(userId),
         "name": manga_name,
         "chapter_link": base_url + find_chapter(base_url + manga_url, current_chapter),
         "current_chapter": current_chapter,
         "cover_link": manga_cover
-    }).execute()
+    }
+    ).execute()
 
-
-#url = "https://www.mangapill.com/manga/4035/shuumatsu-no-walk-re"   
-#page = requests.get(url)
-#soup = BeautifulSoup(page.text, features="html.parser")
 
 #gets a manga url from the name
 def get_manga_url(manga_name):
     search_url = base_url + "/search?q=" + manga_name.replace(" ", "+") + "&type=&status="
+    print("search_url " ,search_url)
     page = requests.get(search_url)
     soup = BeautifulSoup(page.text, features="html.parser")
     results = []
@@ -139,9 +97,7 @@ def get_manga_url(manga_name):
     return results[0] if results else None
 
 def normalize_title(title):
-    # Remove anything in parentheses
     title = re.sub(r"\s*\(.*?\)", "", title)
-    # Collapse extra whitespace
     return title.strip()
 
 
@@ -215,10 +171,10 @@ def find_better_chapter(manga_url, chapter_number=None):
         return chapters[-1]
 
 # print("better chapter", find_better_chapter(get_manga_url("Record of Ragnarok"), 3))
-print(find_chapter(base_url + "/manga/5460/dandadan"))
-print(get_manga_url("Dandadan"))
-print(get_manga_url("One Punch Man"))
-print(find_chapter(base_url + get_manga_url("One Punch Man")).split("/")[-1].split("-")[-1])
+# print(find_chapter(base_url + "/manga/5460/dandadan"))
+# print(get_manga_url("Dandadan"))
+# print(get_manga_url("One Punch Man"))
+# print(find_chapter(base_url + get_manga_url("One Punch Man")).split("/")[-1].split("-")[-1])
 def save_manga(manga_list, manga_name, current_chapter=1):
     manga_url = get_manga_url(manga_name)
     manga_cover = get_manga_cover(manga_name)
@@ -239,23 +195,23 @@ def save_manga(manga_list, manga_name, current_chapter=1):
 def open_manga(manga):
     webbrowser.open(base_url + find_chapter(manga['url'], manga['current_chapter']))
 
-#save_manga(saved_manga, 'One Piece', 1100)
-#save_manga(saved_manga, 'Record of Ragnarok', 110)
-#save_manga(re_reads, 'Greatest Estate Developer')
-#print(find_chapter(get_manga_url('One Piece')))
-
 def get_manga_from_js(chapter_link):
     page = requests.get(chapter_link)
     soup = BeautifulSoup(page.text, features="html.parser")
     result = soup.find(id="top").get_text()
-    # text = result.get_text()
     print(result)
     name = result.split(" Chapter ")
     print(name[0])
     return [name[0], float(name[1])]
 
+
 class ChapterData(BaseModel):
     chapter_link: str
+    userId: str
+
+class DeleteData(BaseModel):
+    manga_name: str
+    db_name: str
     userId: str
 
 
@@ -263,10 +219,10 @@ class ChapterData(BaseModel):
 async def get_link(data: ChapterData):
     link = data.chapter_link
     userId = data.userId
-    print(userId)
+    # print(userId)
+    print("link", link)
     manga_data = get_manga_from_js(link)
     print(manga_data)
-    # save_manga(saved_manga, manga_data[0], manga_data[1])
     save_manga_to_db(userId, manga_data)
     print(saved_manga)
     return {"recieved": link}
@@ -284,13 +240,23 @@ async def get_link(data: ChapterData):
 def get_userId():
     return userId
 
+@app.post("/api/remove-manga")
+def remove_manga(data: DeleteData):
+    userId = data.userId
+    manga_name = data.manga_name
+    print("removing", manga_name)
+    db_name = data.db_name
+    print("removing from db", db_name)
+    supabase.table(db_name).delete().eq("user_id", userId).eq("name", manga_name).execute()
+    return {"status": "success"}
+
 @app.get("/api/get-saved-manga")
 def get_saved_manga(request: Request):
     auth = request.headers.get("authorization")
     token = auth.split(" ")[1]
     userId = supabase.auth.get_user(token).user.id
     saved_manga = []
-    table = supabase.table("savedManga").select("*").eq("user_id", userId).execute()
+    table = supabase.table("saved_manga").select("*").eq("user_id", userId).execute()
     for manga in table.data:
         save_manga(saved_manga, manga['name'], manga['current_chapter'])   
     # print(saved_manga
@@ -316,7 +282,7 @@ def get_new_chapters(request: Request):
     auth = request.headers.get("authorization")
     token = auth.split(" ")[1]
     userId = supabase.auth.get_user(token).user.id
-    saved_manga = supabase.table("savedManga").select("*").eq("user_id", userId).execute()
+    saved_manga = supabase.table("saved_manga").select("*").eq("user_id", userId).execute()
     # print(saved_manga.data)
     for manga in saved_manga.data:
         # print(manga['name'])

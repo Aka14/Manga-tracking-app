@@ -1,10 +1,13 @@
 implement RLS
-Add delete function
 Optimize to reduce load times
+Refactor
 Search on navbar
 Add support for manhwa website
 light mode
 UI overhaul
+    - mobile view
+    - if page shrinks then navbar collapses into side window
+    - remove Manga button fix
 deployment
 
 
@@ -14,3 +17,4 @@ Image search - done
 browser html better - done
 login + auth + data recollection - done
 New chapters from db data - done
+Add delete function - done

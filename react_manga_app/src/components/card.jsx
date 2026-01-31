@@ -1,17 +1,28 @@
 import React from "react";
 import { BASE_URL } from "../config";
 
-const Card = ({ manga_name, cover, current_chapter, chapter_url, latest_url }) => {
+const Card = ({
+  manga_name,
+  cover,
+  current_chapter,
+  chapter_url,
+  latest_url,
+  onRightClick,
+}) => {
   console.log(manga_name, cover, current_chapter, chapter_url, latest_url);
+  
   return (
-    <div className="w-[200px] flex flex-col gap-4 max-w-sm overflow-hidden mt-auto">
-      <div>
+      <div
+        className="w-[200px] flex flex-col gap-.5 max-w-sm overflow-hidden mt-auto"
+        onContextMenu={onRightClick}
+      >
         <p className="font-bold text-xl">{manga_name}</p>
         <p className="text-md">{current_chapter}</p>
         <a
           href={`${BASE_URL}${chapter_url}`}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()} // prevents link click from triggering menu
         >
           <img
             className="h-85 rounded-2xl py-2 object-cover"
@@ -20,7 +31,6 @@ const Card = ({ manga_name, cover, current_chapter, chapter_url, latest_url }) =
           />
         </a>
       </div>
-    </div>
   );
 };
 

@@ -101,9 +101,10 @@ function App() {
 
   return (
     <div className="min-h-screen pt-15 px-10">
-      {/* Only show navbar on protected routes */}
       {location.pathname !== "/" && location.pathname !== "/sign-up" && (
-        <Navbar />
+        <div className="flex items-center justify-between">
+          <Navbar />
+        </div>
       )}
 
       <div className="container">
